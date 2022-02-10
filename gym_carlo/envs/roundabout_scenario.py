@@ -25,7 +25,7 @@ BOTTOM_BUILDING_HEIGHT = -LANE_MARKER_WIDTH/2. - LANE_WIDTH - SIDEWALK_WIDTH # i
 
 PPM = 5 # pixels per meter
 
-class IntersectionScenario(gym.Env):
+class RoundaboutScenario(gym.Env):
     def __init__(self, goal):
         assert 0 <= goal <= 3, 'Undefined goal'
         
@@ -39,7 +39,7 @@ class IntersectionScenario(gym.Env):
         self.init_ego.velocity = Point(1., 0.)
         self.init_ego.min_speed = 0.
         self.init_ego.max_speed = 30.
-        self.init_ego.speed_limit = 5.5    # Approx 20 Km/h (typical roundabout speed)
+        self.init_ego.speed_limit = 8.34    # Approx 30 Km/h (typical urban speed limit)
         
         self.ped_min_speed = 0.5
         self.ped_max_speed = 3.

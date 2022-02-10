@@ -2,11 +2,13 @@ import gym
 from gym.spaces import Box
 from gym.utils import seeding
 import numpy as np
+import random
 
 from .world import World
 from .agents import Car, CircleBuilding, RingBuilding, Painting
 from .geometry import Point
 from .graphics import Text, Point as pnt # very unfortunate indeed
+from .obs_utils import *
 
 
 
@@ -28,22 +30,26 @@ class CircularroadScenario(gym.Env):
     def __init__(self, goal=2): # goal is only for compatibility to other scenarios
         self.seed(0) # just in case we forget seeding
         
+        self.active_goal = goal
+        
         self.init_ego = Car(Point(MAP_WIDTH/2. + LANE_MARKER_RADIUS, MAP_HEIGHT/2.), np.pi/2) # it will be reset by reset(), but anyways...
         self.init_ego.velocity = Point(0., 1.)
         self.init_ego.min_speed = 0.
         self.init_ego.max_speed = 30.
+        self.init_ego.speed_limit = 8.34    # Approx 30 Km/h (typical urban speed limit)
         
         # Two variables below will be used only by the automatic data collector
         self.lane_width = LANE_WIDTH
         self.lane_marker_width = LANE_MARKER_WIDTH
         
         self.dt = 0.1
-        self.T = np.inf
+        self.T = 30
         
         self.reset()
         
     def reset(self):
         self.world = World(self.dt, width = MAP_WIDTH, height = MAP_HEIGHT, ppm = PPM)
+        self.active_goal = random.choice([0,1,2])
            
         self.ego = self.init_ego.copy()
         rnd_theta  = self.np_random.rand()*2*np.pi
@@ -51,7 +57,7 @@ class CircularroadScenario(gym.Env):
         rnd_speed  = 2.5 + self.np_random.rand()*5
         
         self.ego.center = Point(rnd_radius*np.cos(rnd_theta), rnd_radius*np.sin(rnd_theta)) + Point(MAP_WIDTH/2., MAP_HEIGHT/2.)
-        self.ego.heading = np.mod(rnd_theta + np.pi/2., 2*np.pi) # CARLO assumes 90 degrees is +y direction
+        self.ego.heading = np.mod(rnd_theta - np.pi/2., 2*np.pi) # CARLO assumes 90 degrees is +y direction
         self.ego.velocity = Point(rnd_speed*np.cos(self.ego.heading) + 0.01*self.np_random.rand()-0.005, rnd_speed*np.cos(self.ego.heading) + 0.01*self.np_random.rand()-0.005) # a little noise is good for data collection
                
         # To create a circular road, we will add a CircleBuilding and then a RingBuilding around it
@@ -66,6 +72,14 @@ class CircularroadScenario(gym.Env):
             dy = LANE_MARKER_RADIUS * np.sin(theta)
             self.world.add(Painting(Point(MAP_WIDTH/2. + dx, MAP_HEIGHT/2. + dy), Point(LANE_MARKER_WIDTH, LANE_MARKER_HEIGHT), 'white', heading = theta))
 
+        # Lastly, add some targets
+        self.targets = []
+        self.targets.append(Point(MAP_WIDTH/2, MAP_HEIGHT/2 + INNER_BUILDING_RADIUS + 2*LANE_WIDTH - 0.25)) # 12 o'clock
+        self.targets.append(Point(MAP_WIDTH/2 - INNER_BUILDING_RADIUS - 2*LANE_WIDTH + 0.25, MAP_HEIGHT/2)) # 9 o'clock
+        self.targets.append(Point(MAP_WIDTH/2, MAP_HEIGHT/2 - INNER_BUILDING_RADIUS - 2*LANE_WIDTH + 0.25)) # 6 o'clock
+        self.targets.append(Point(MAP_WIDTH/2 + INNER_BUILDING_RADIUS + 2*LANE_WIDTH + 0.25, MAP_HEIGHT/2)) # 3 o'clock
+        self.world.add(Painting(self.targets[self.active_goal], Point(1,1),'yellow'))
+        
         self.world.add(self.ego)
         
         return self._get_obs()
@@ -88,6 +102,12 @@ class CircularroadScenario(gym.Env):
         return [seed]
     
     @property
+    def target_reached(self):
+        if self.active_goal < len(self.targets):
+            return self.targets[self.active_goal].distanceTo(self.ego) < 1.
+        return np.min([self.targets[i].distanceTo(self.ego) for i in range(len(self.targets))]) < 1.
+    
+    @property
     def collision_exists(self):
         return self.world.collision_exists()
         
@@ -96,14 +116,16 @@ class CircularroadScenario(gym.Env):
         self.ego.set_control(action[0],action[1])
         self.world.tick()
         
-        return self._get_obs(), self._get_reward(), self.collision_exists or self.world.t >= self.T, {}
+        return self._get_obs(), self._get_reward(), self.collision_exists or self.target_reached or self.world.t >= self.T, {}
         
-    def _get_reward(self): # noone should use this, but let's keep it
-        if self.collision_exists:
-            return -200
-        return 0
+    def _get_reward(self): # none should use this, but let's keep it
+        return reward_circularroad(self)
         
     def _get_obs(self):
+        self.ego.dist_to_centerline = distance_to_centerline_circularroad(self, MAP_WIDTH, MAP_HEIGHT, INNER_BUILDING_RADIUS, LANE_WIDTH)
+        self.ego.dist_to_target =  self.targets[self.active_goal].distanceTo(self.ego)
+        self.ego.dist_to_wall = 0
+        self.ego.tlc = [0,0]
         return np.array([self.ego.distanceTo(Point(MAP_WIDTH/2., MAP_HEIGHT/2.)), np.arctan2(self.ego.y, self.ego.x), self.ego.speed, self.ego.heading])
         
     def car_in_lane(self, lane_no):

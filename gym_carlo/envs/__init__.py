@@ -4,3 +4,4 @@ from gym_carlo.envs.lanechange_scenario import LanechangeScenario as lanechangeS
 from gym_carlo.envs.lanechange_scenario import LanechangeScenario as lanechangeScenario
 from gym_carlo.envs.twocarlanechangeScenario import twoCarLanechangeScenario  as twocarlanechangeScenario
 from gym_carlo.envs.threecarlanechangeScenario import threeCarLanechangeScenario  as threecarlanechangeScenario
+from gym_carlo.envs.roundabout_scenario import RoundaboutScenario as roundaboutScenario

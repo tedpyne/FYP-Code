@@ -48,3 +48,12 @@ register(
     entry_point='gym_carlo.envs:' + env_name[:-3],
     kwargs={'goal': 2}
 )
+
+env_name = 'roundaboutScenario-v0'
+if env_name in gym.envs.registry.env_specs:
+    del gym.envs.registry.env_specs[env_name]
+register(
+    id=env_name,
+    entry_point='gym_carlo.envs:' + env_name[:-3],
+    kwargs={'goal': 2}, # it doesn't really have a goal
+)

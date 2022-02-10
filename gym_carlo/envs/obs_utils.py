@@ -10,6 +10,7 @@ retrieved from scenario observations.
 """
 
 from numpy import sqrt, arcsin, nan_to_num, pi
+from .geometry import Point
 
 def distance_to_wall(x_position, map_width, building_width):
     
@@ -125,7 +126,19 @@ def distance_to_centerline_intersection(self, lane_pos, lane_width, map_width, b
             # Distance from ego to arc
             return abs(sqrt(((self.ego.center.x - x_center)**2) + (self.ego.center.y - y_center)**2) - radius)
         
-            
+def distance_to_centerline_circularroad(self, map_width, map_height, inner_rad, lane_width):
+  
+    # Inner lane
+    h = map_width/2 
+    k = map_height/2
+    r = inner_rad + lane_width/2
+
+    if self.ego.distanceTo(Point(map_width/2, map_height/2)) < inner_rad + lane_width:
+        r = inner_rad +  (0.5 *lane_width)
+    else:
+        r = inner_rad + (1.5 * lane_width)
+        
+    return abs(sqrt((self.ego.center.x -h )**2 + (self.ego.center.y - k)**2) - r)
             
     
 
@@ -280,9 +293,9 @@ def reward_intersection(self, LANE_WIDTH):
             return -50
         
     # Proximity to pedestrians
-    if self.ped_1.distanceTo(self.ego) < 5:
+    if self.ped_1.distanceTo(self.ego) < 1.5:
         return -50
-    elif self.ped_2.distanceTo(self.ego) < 5:
+    elif self.ped_2.distanceTo(self.ego) < 1.5:
         return -50
     
     if self.active_goal < len(self.targets):
@@ -308,6 +321,42 @@ def reward_intersection(self, LANE_WIDTH):
         
         # Smooth driving signal
         # angular_v_signal = 0.3 * abs(self.ego.angular_acceleration)
+        angular_v_signal = 0
+        
+        reward = obj_signal - time_signal + vel_signal + centerline_signal - angular_v_signal
+        return reward
+    
+def reward_circularroad(self):
+    
+    # Termination rewards
+    if self.collision_exists:
+        return -500
+    if self.target_reached:
+        return 5000
+    
+    if self.active_goal < len(self.targets):
+        
+        # Objective signal
+        obj_signal = 20 - (0.01*self.targets[self.active_goal].distanceTo(self.ego))**4
+        # print("Objective Signal: {}".format(obj_signal))
+        
+        # Time signal
+        time_signal = 1.5 * self.world.t
+        # print("Time Signal: {}".format(time_signal))
+        
+        vel_signal = 10. / (1 + abs(self.init_ego.speed_limit - self.ego.speed))
+        if self.ego.speed < 5:
+            vel_signal = vel_signal - 20 
+        # print("Velocity Signal: {}".format(vel_signal))
+        
+        # Centerline Signal
+        centerline_signal = 10./ (1 + self.ego.dist_to_centerline)
+        if self.ego.dist_to_centerline > 2:
+            centerline_signal = centerline_signal - 5
+        # print("Centerline Signal: {}".format(centerline_signal))
+        
+    #     # Smooth driving signal
+    #     # angular_v_signal = 0.3 * abs(self.ego.angular_acceleration)
         angular_v_signal = 0
         
         reward = obj_signal - time_signal + vel_signal + centerline_signal - angular_v_signal

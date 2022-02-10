@@ -11,25 +11,28 @@ from stable_baselines.common.callbacks import BaseCallback
 from stable_baselines.results_plotter import load_results, ts2xy
 import matplotlib.pyplot as plt
 
-scenario_names = ['intersection', 'circularroad', 'lanechange', 'twocarlanechange', 'threecarlanechange']
+scenario_names = ['intersection', 'circularroad', 'lanechange', 'twocarlanechange', 'threecarlanechange', 'roundabout']
 obs_sizes = {'intersection': 5,
              'circularroad': 4,
              'lanechange': 3,
              'twoCarLanechangeScenario': 3,
-             'threeCarLanechangeScenario': 3
+             'threeCarLanechangeScenario': 3,
+             'threeCarLanechangeScenario': 3,  
              }
 goals = {'intersection': ['left','straight','right'],
          'circularroad': ['inner','outer'],
          'lanechange': ['left','right'],
          'twocarlanechange': ['left','right'],
-         'threecarlanechange': ['left','right']
+         'threecarlanechange': ['left','right'],
+         'roundabout': ['top','left','bottom', 'right']
          }
 # Steering Sensitivity [Left, Right]
 steering_lims = {'intersection': [-0.5,0.5],
                  'circularroad': [-0.15,0.15],
                  'lanechange': [-0.15, 0.15],
                  'twocarlanechange': [-0.15, 0.15],
-                 'threecarlanechange': [-0.15, 0.15]
+                 'threecarlanechange': [-0.15, 0.15],
+                 'roundabout': [-0.5,0.5]
                  }
 
 def maybe_makedirs(path_to_create):

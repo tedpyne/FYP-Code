@@ -18,8 +18,9 @@ from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize
 # SCENARIO_NAME = 'twocarlanechange'
 # SCENARIO_NAME = 'threecarlanechange'
 SCENARIO_NAME = 'intersection'
+# SCENARIO_NAME = 'circularroad'
 
-GOAL = 1
+GOAL = 2
 
 log_dir = "logs/SAC/" + SCENARIO_NAME + "/"
 
@@ -31,7 +32,7 @@ env.training = False        #  do not update them at test time
 env.norm_reward = False     # reward normalization is not needed at test time
 
 # Load model
-# model = PPO2.load(log_dir + 'last_model')
+# model = SAC.load(log_dir + '750k')
 model = SAC.load(log_dir + 'last_model')
 # model = SAC.load(log_dir + 'best_model')
 

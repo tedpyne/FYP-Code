@@ -25,6 +25,7 @@ from stable_baselines.results_plotter import ts2xy
 # SCENARIO_NAME = 'twocarlanechange'
 # SCENARIO_NAME = 'threecarlanechange'
 SCENARIO_NAME = 'intersection'
+# SCENARIO_NAME = 'circularroad'
 GOAL = 2
 
 # dirs
@@ -46,11 +47,6 @@ env = VecNormalize(env, norm_obs=True, norm_reward=True,
 callback = utils.SaveOnBestTrainingRewardCallback(check_freq=50_000,
                                                   log_dir=log_dir)
 time_steps = 750_000
-
-
-# model = PPO2(MlpPolicy, env, verbose=1, gamma=0.99,
-#               learning_rate=0.001,
-#               tensorboard_log=log_dir)
 
 model = SAC(MlpPolicy, env, verbose=1)
 
